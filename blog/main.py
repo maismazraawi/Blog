@@ -32,7 +32,7 @@ def create_user(request: schemas.User, db: Session = Depends(get_db)):
     return new_user
     
 
-@app.get('/users', tags=['users'], response_model=List[schemas.User], status_code=status.HTTP_202_ACCEPTED)
+@app.get('/users', tags=['users'], response_model=List[schemas.ShowUser], status_code=status.HTTP_202_ACCEPTED)
 def show_all_users(db: Session= Depends(get_db)):
     users = db.query(models.User).all()
     return jsonable_encoder(users)
