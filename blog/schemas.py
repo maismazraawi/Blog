@@ -1,19 +1,6 @@
+from typing import Optional
 from pydantic import BaseModel
 
-class BlogSchema(BaseModel):
-    id: int
-    title: str
-    body: str
-
-    class Config:
-        from_attributes = True
-
-class ShowBlog(BaseModel):
-    title: str
-    body: str
-
-    class Config:
-        from_attributes = True
 
 class User(BaseModel):
     id: int
@@ -31,3 +18,21 @@ class ShowUser(BaseModel):
     
     class Config:
         from_attributes = True
+
+class BlogSchema(BaseModel):
+    id: int
+    title: str
+    body: str
+    user_id: int
+    
+    class Config:
+        from_attributes = True
+
+class ShowBlog(BaseModel):
+    title: str
+    body: str
+    owner: Optional[ShowUser]
+        
+    class Config:
+        from_attributes = True
+
