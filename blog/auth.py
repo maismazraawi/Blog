@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
-from blog import schemas, main, models, database
+from blog import schemas, models, database
 from blog.database import get_db
+
 
 
 router = APIRouter(tags=['Authentication'])
@@ -14,19 +15,26 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-@router.post('/login')
+def verify_token(token:str, credentials_exception):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(email=email)
+    except JWTError:
+        raise credentials_exception
+
+@router.post('/login', response_model=schemas.Token)
 def login(request:schemas.Login, db:Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == request.email).first()
-    if not user:
+    if not user or not user.verify_password(request.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials")
     
     access_token = create_access_token(data={"sub": user.email})
@@ -34,6 +42,3 @@ def login(request:schemas.Login, db:Session = Depends(database.get_db)):
 
     
     
-    
-    
-
