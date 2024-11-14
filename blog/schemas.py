@@ -3,11 +3,10 @@ from pydantic import BaseModel
 
 
 class User(BaseModel):
-    id: int
     name: str
     email: str
     password: str
-
+    
     class Config:
         from_attributes = True
 
@@ -20,7 +19,6 @@ class ShowUser(BaseModel):
         from_attributes = True
 
 class BlogSchema(BaseModel):
-    id: int
     title: str
     body: str
     user_id: int
