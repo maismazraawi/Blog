@@ -1,31 +1,29 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy.orm import Session
-from blog import models, schemas, database
-from blog.database import engine, SessionLocal
+from sqlalchemy.orm import Session, joinedload
+from blog import models, schemas, auth, database
+from blog.database import engine, SessionLocal, get_db
 from blog.schemas import BlogSchema, ShowBlog, User
 from typing import List
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import joinedload
-
 
 app = FastAPI()
 
-# after using alembic no need for it:
-#Create tables in the database
-#models.Base.metadata.create_all(bind=engine)
 
-# Dependency to get the DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+app.include_router(auth.router)
+
 
 @app.post('/user', tags=['users'], response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(request: schemas.User, db: Session = Depends(get_db)):
-    new_user = models.User(id=request.id , name=request.name, email=request.email, password=request.password)
+    new_user = models.User(name=request.name, 
+                           email=request.email)
+    
+    try:
+        new_user.hash_password(request.password)  
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -40,11 +38,9 @@ def show_all_users(db: Session= Depends(get_db)):
 
 @app.post('/blog', tags=['blogs'], response_model=schemas.ShowBlog, status_code=status.HTTP_201_CREATED)
 def create_blog(request: schemas.BlogSchema, db: Session = Depends(get_db)):
-    new_blog = models.Blog(
-        title=request.title, 
-        body=request.body, 
-        user_id=request.user_id
-        )
+    new_blog = models.Blog(title=request.title, 
+                           body=request.body, 
+                           user_id=request.user_id)
     
     db.add(new_blog)
     db.commit()
