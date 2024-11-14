@@ -38,7 +38,7 @@ class User(Base):
                 detail="Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character."
             )
         
-    # Hash password before storing it in the database
+     # Hash password before storing it in the database
     def hash_password(self, password: str):
         self.validate_password(password)  # Validate password format
         self.password = pwd_context.hash(password)
