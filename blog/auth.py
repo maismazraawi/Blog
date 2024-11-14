@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
@@ -31,7 +32,7 @@ def verify_token(token:str, credentials_exception):
     except JWTError:
         raise credentials_exception
 
-@router.post('/login', response_model=schemas.Token)
+@router.post('/login')
 def login(request:schemas.Login, db:Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == request.email).first()
     if not user or not user.verify_password(request.password):

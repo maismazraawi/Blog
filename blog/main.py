@@ -33,17 +33,15 @@ def create_user(request: schemas.User, db: Session = Depends(get_db)):
 
 @app.get('/users', tags=['users'], response_model=List[schemas.ShowUser], status_code=status.HTTP_202_ACCEPTED)
 def show_all_users(db: Session= Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
-    user = db.query(models.User).filter(models.User.id == get_current_user.id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return jsonable_encoder(user)
+    users = db.query(models.User).all()
+    return jsonable_encoder(users)
 
 
 @app.post('/blog', tags=['blogs'], response_model=schemas.ShowBlog, status_code=status.HTTP_201_CREATED)
 def create_blog(request: schemas.BlogSchema, db: Session = Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
     new_blog = models.Blog(title=request.title, 
                            body=request.body, 
-                           user_id=get_current_user.id)
+                           user_id=request.user_id)
     
     db.add(new_blog)
     db.commit()
@@ -53,15 +51,13 @@ def create_blog(request: schemas.BlogSchema, db: Session = Depends(get_db), get_
 
 @app.get('/blogs', tags=['blogs'], response_model=List[schemas.ShowBlog], status_code=status.HTTP_202_ACCEPTED)
 def show_all_blogs(db: Session= Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
-    blogs = db.query(models.Blog).options(joinedload(models.Blog.owner)).filter(models.Blog.user_id == get_current_user.id).all()
+    blogs = db.query(models.Blog).options(joinedload(models.Blog.owner)).all()
     return jsonable_encoder(blogs)
 
 
 @app.get('/blog/{id}', tags=['blogs'], response_model=schemas.ShowBlog, status_code=status.HTTP_202_ACCEPTED)
 def show(id: int, db: Session = Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
-    blog = db.query(models.Blog).options(joinedload(models.Blog.owner)).filter(models.Blog.id == id, models.Blog.user_id == get_current_user.id).first()
+    blog = db.query(models.Blog).options(joinedload(models.Blog.owner)).filter(models.Blog.id == id).first()
     if not blog:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= f'Blog with id {id} is not available or you dont have access to it')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= f'Blog with id {id} is not available')
     return jsonable_encoder(blog)
-
-
