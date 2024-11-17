@@ -1,3 +1,4 @@
+from urllib import request
 from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session, joinedload
@@ -14,25 +15,21 @@ app = FastAPI()
 app.include_router(auth.router)
 
 
-@app.post('/user', tags=['users'],  status_code=status.HTTP_201_CREATED)
+@app.post('/user', tags=['users'], status_code=status.HTTP_201_CREATED)
 def create_user(request: schemas.User, db: Session = Depends(get_db)):
-    new_user = models.User(name=request.name, 
-                           email=request.email)
-    
+    new_user = models.User(name=request.name, email=request.email)
     try:
         new_user.hash_password(request.password)  
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    
-    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user.name
+    return new_user.name and new_user.email
     
 
 @app.get('/users', tags=['users'], response_model=List[schemas.ShowUser], status_code=status.HTTP_202_ACCEPTED)
-def show_all_users(db: Session= Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
+def show_all_users(db: Session= Depends(get_db)):
     users = db.query(models.User).all()
     return jsonable_encoder(users)
 
@@ -61,3 +58,26 @@ def show(id: int, db: Session = Depends(get_db), get_current_user:schemas.User =
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= f'Blog with id {id} is not available')
     return jsonable_encoder(blog)
+
+
+@app.patch('/blogs/edit/{blog_id}', tags=['blogs'], status_code=status.HTTP_202_ACCEPTED)
+def edit_blog(blog_id:int, request:schemas.ShowBlog, db:Session=Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
+    blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
+    if not blog:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Blog with id {id} is not found')
+    
+    blog.title = request.title or blog.title
+    blog.body = request.body or blog.body
+    db.commit()
+    db.refresh(blog)
+    return {"message": "Blog updated successfully", "data": blog}
+
+    
+@app.delete('/blogs/delete/{blog_id}', tags=['blogs'], status_code=status.HTTP_202_ACCEPTED)
+def delete_blog(blog_id:int, db:Session=Depends(get_db), get_current_user:schemas.User = Depends(oauth2.get_current_user)):
+    blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
+    if not blog:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Blog with id {id} is not found')
+    db.delete(blog)
+    db.commit()
+    return {'detail': f'Blog with id {id} deleted successfully'}
