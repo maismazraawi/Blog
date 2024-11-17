@@ -28,10 +28,12 @@ def verify_token(token:str, credentials_exception):
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
-    except JWTError:
+        return email
+    except JWTError as e:
+        print(f"JWT decoding error: {e}")
         raise credentials_exception
-
+    
+    
 @router.post('/login')
 def login(request:OAuth2PasswordRequestForm= Depends(), db:Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == request.username).first()

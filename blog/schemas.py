@@ -21,16 +21,7 @@ class ShowUser(BaseModel):
 class BlogSchema(BaseModel):
     title: str
     body: str
-    user_id: int
     
-    class Config:
-        from_attributes = True
-
-class ShowBlog(BaseModel):
-    title: str
-    body: str
-    owner: Optional[ShowUser]
-        
     class Config:
         from_attributes = True
 
