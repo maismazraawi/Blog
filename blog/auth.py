@@ -33,8 +33,8 @@ def verify_token(token:str, credentials_exception):
         raise credentials_exception
 
 @router.post('/login')
-def login(request:schemas.Login, db:Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == request.email).first()
+def login(request:OAuth2PasswordRequestForm= Depends(), db:Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == request.username).first()
     if not user or not user.verify_password(request.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials")
     

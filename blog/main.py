@@ -14,7 +14,7 @@ app = FastAPI()
 app.include_router(auth.router)
 
 
-@app.post('/user', tags=['users'], response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@app.post('/user', tags=['users'],  status_code=status.HTTP_201_CREATED)
 def create_user(request: schemas.User, db: Session = Depends(get_db)):
     new_user = models.User(name=request.name, 
                            email=request.email)
@@ -28,7 +28,7 @@ def create_user(request: schemas.User, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return new_user.name
     
 
 @app.get('/users', tags=['users'], response_model=List[schemas.ShowUser], status_code=status.HTTP_202_ACCEPTED)

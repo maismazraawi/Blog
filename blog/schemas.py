@@ -12,8 +12,8 @@ class User(BaseModel):
 
 
 class ShowUser(BaseModel):
-    name: str
-    email: str
+    name: Optional[str]
+    email: Optional[str]
     
     class Config:
         from_attributes = True
