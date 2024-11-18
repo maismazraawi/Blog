@@ -37,7 +37,7 @@ def show_all_users(db: Session= Depends(get_db)):
 @app.post('/blog', tags=['blogs'], response_model=schemas.BlogSchema, status_code=status.HTTP_201_CREATED)
 def create_blog(request: schemas.BlogSchema, 
                 db: Session = Depends(get_db), 
-                current_user:models.User = Depends(oauth2.get_current_user),
+                current_user:models.User = Depends(oauth2.get_current_user)
                 ):
     new_blog = models.Blog(title=request.title, 
                            body=request.body, 
@@ -50,8 +50,10 @@ def create_blog(request: schemas.BlogSchema,
 
 
 @app.get('/blogs', tags=['blogs'], response_model=List[schemas.BlogSchema], status_code=status.HTTP_202_ACCEPTED)
-def show_all_blogs(db: Session= Depends(get_db)):
-    blogs = db.query(models.Blog).options(joinedload(models.Blog.owner)).all()
+def show_all_blogs(db: Session= Depends(get_db),
+                   current_user: models.User = Depends(oauth2.get_current_user)
+                   ):
+    blogs = db.query(models.Blog).filter(models.Blog.user_id == current_user.id).all()
     return jsonable_encoder(blogs)
 
 
@@ -69,7 +71,6 @@ def show(id: int, db: Session = Depends(get_db),
 @app.patch('/blogs/edit/{blog_id}', tags=['blogs'], status_code=status.HTTP_202_ACCEPTED)
 def edit_blog(blog_id:int, request:schemas.BlogSchema, 
               db:Session=Depends(get_db), 
-              get_current_user:schemas.User = Depends(oauth2.get_current_user),
               current_user: schemas.User = Depends(oauth2.get_current_user)
               ):
     blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
@@ -89,7 +90,6 @@ def edit_blog(blog_id:int, request:schemas.BlogSchema,
 @app.delete('/blogs/delete/{blog_id}', tags=['blogs'], status_code=status.HTTP_202_ACCEPTED)
 def delete_blog(blog_id:int, 
                 db:Session=Depends(get_db), 
-                get_current_user:schemas.User = Depends(oauth2.get_current_user),
                 current_user: schemas.User = Depends(oauth2.get_current_user)
                 ):
     blog = db.query(models.Blog).filter(models.Blog.id == blog_id).first()
