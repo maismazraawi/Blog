@@ -1,32 +1,26 @@
-# Use the Python 3.12 slim base image
+# Use an official Python base image
 FROM python:3.12-slim
 
-# Set environment variables to prevent prompts during installation
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Set the working directory in the container
+WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    curl \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y build-essential
+
+# Copy only the pyproject.toml and poetry.lock to leverage caching
+COPY pyproject.toml poetry.lock* /app/
 
 # Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN pip install poetry
 
-# Add Poetry to PATH
-ENV PATH="/root/.local/bin:$PATH"
+# Install project dependencies
+RUN poetry config virtualenvs.create false && poetry install --no-dev
 
-# Create app directory and copy project files
-WORKDIR /app
-COPY . .
+# Copy the rest of the application files
+COPY . /app
 
-# Install project dependencies using Poetry
-RUN poetry install --no-root
-
-# Expose the FastAPI port (default is 8000)
+# Expose the port your app runs on
 EXPOSE 8000
 
-# Start FastAPI server
-CMD ["poetry", "run", "uvicorn", "blog.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the app
+CMD ["uvicorn", "blog.main:app", "--host", "0.0.0.0", "--port", "8000"]
